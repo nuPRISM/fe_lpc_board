@@ -196,6 +196,24 @@ class MyPeriodicEquipment(midas.frontend.EquipmentBase):
             else:
                 self.client.msg("Internal trigger enabled")
 
+    def print_hi(self):
+        print("Hi!")
+
+
+    def close_serial_connect(self):
+
+        # Disable the light pulser card
+        cmd="D\n"
+        self.ser.write(cmd.encode())
+        line = self.ser.readline()
+        line = self.ser.readline()
+        if line != b'\n' and line != b'\r\n' :
+            print("LPC board has been disabled: " + str(line))
+
+        # Close serial link
+        self.ser.close()
+        print("Closed serial link and exiting.")
+
 
 class MyFrontend(midas.frontend.FrontendBase):
     """
@@ -208,6 +226,8 @@ class MyFrontend(midas.frontend.FrontendBase):
         # it in __init__() seems logical.
         self.add_equipment(MyPeriodicEquipment(self.client))
 
+        self.equipment["LPC_Board"].print_hi()
+
     def begin_of_run(self, run_number):
         self.set_all_equipment_status("Running", "greenLight")
         self.client.msg("Frontend has seen start of run number %d" % run_number)
@@ -217,6 +237,11 @@ class MyFrontend(midas.frontend.FrontendBase):
         self.set_all_equipment_status("Finished", "greenLight")
         self.client.msg("Frontend has seen end of run number %d" % run_number)
         return midas.status_codes["SUCCESS"]
+        
+    def frontend_exit(self):
+
+        self.equipment["LPC_Board"].close_serial_connect()
+
         
 if __name__ == "__main__":
 
